@@ -125,29 +125,67 @@
       });
     });
 
+    function shiftColor(rgb, hueShift) {
+      const div = document.createElement('div');
+      div.style.color = rgb;
+      document.body.appendChild(div);
+      const computed = getComputedStyle(div).color;
+      document.body.removeChild(div);
 
+      const [r, g, b] = computed.match(/\d+/g).map(Number);
+      let [h, s, l] = rgbToHsl(r, g, b);
+      h = (h + hueShift + 360) % 360;
+      return `hsl(${h}, ${s}%, ${l}%)`;
+    }
+
+    function rgbToHsl(r, g, b) {
+      r /= 255; g /= 255; b /= 255;
+      const max = Math.max(r, g, b), min = Math.min(r, g, b);
+      let h, s, l = (max + min) / 2;
+      if (max === min) {
+        h = s = 0;
+      } else {
+        const d = max - min;
+        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+        switch(max){
+          case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+          case g: h = (b - r) / d + 2; break;
+          case b: h = (r - g) / d + 4; break;
+        }
+        h *= 60;
+      }
+      return [h, s * 100, l * 100];
+    }
+
+    function createCell(rect, baseColor) {
+      const newCell = document.createElement('div');
+      newCell.className = 'cell';
+
+      const newColor = shiftColor(baseColor, Math.random() * 30 - 15);
+      newCell.style.backgroundColor = newColor;
+
+      newCell.style.top = `${rect.top}px`;
+      newCell.style.left = `${rect.left}px`;
+      container.appendChild(newCell);
+
+      let velocity = { x: Math.random() * 6 - 3, y: Math.random() * 6 - 3 };
+      animateCell(newCell, velocity);
+      makeDraggable(newCell);
+    }
 
     container.addEventListener('click', (e) => {
       if (!e.target.classList.contains('cell')) return;
       const cell = e.target;
-
       if (currentMode === 'split') {
         const rect = cell.getBoundingClientRect();
+        const baseColor = getComputedStyle(cell).backgroundColor;
+
         splitAudio.currentTime = 0;
         splitAudio.play();
-        const createCell = () => {
-          const newCell = document.createElement('div');
-          newCell.className = 'cell';
-          newCell.style.top = `${rect.top}px`;
-          newCell.style.left = `${rect.left}px`;
-          container.appendChild(newCell);
 
-          let velocity = { x: Math.random() * 6 - 3, y: Math.random() * 6 - 3 };
-          animateCell(newCell, velocity);
-          makeDraggable(newCell);
-        };
-        createCell();
-        createCell();
+        createCell(rect, baseColor);
+        createCell(rect, baseColor);
+
         container.removeChild(cell);
       } else if (currentMode === 'delete') {
         popAudio.currentTime = 0;
