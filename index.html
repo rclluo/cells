@@ -68,6 +68,12 @@
       cursor: grab;
       box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
       transition: box-shadow 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      color: white;
+      font-size: 16px;
     }
 
     .cell:active {
@@ -81,6 +87,10 @@
       border-radius: 50%;
       pointer-events: none;
       animation: particleMove 500ms ease-out forwards;
+    }
+
+    .red {
+      background-color: red;
     }
 
     @keyframes particleMove {
@@ -100,8 +110,8 @@
     <button data-mode="split" class="active">Split</button>
     <button data-mode="drag">Drag</button>
     <button data-mode="delete">Delete</button>
+    <button id="destroyAll" style="background-color: red; color: white;">Destroy All</button>
   </div>
-
   <div id="container">
     <div class="cell" style="top: 50%; left: 50%; transform: translate(-50%, -50%);"></div>
   </div>
@@ -173,6 +183,35 @@
       makeDraggable(newCell);
     }
 
+    function pop(cell) {
+      cell.classList.add('pop');
+      const numParticles = 12;
+      const rect = cell.getBoundingClientRect();
+      const originX = rect.left + rect.width / 2;
+      const originY = rect.top + rect.height / 2;
+      for (let i = 0; i < numParticles; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'particle';
+        const angle = Math.random() * 2 * Math.PI;
+        const distance = 30 + Math.random() * 20;
+        const dx = Math.cos(angle) * distance;
+        const dy = Math.sin(angle) * distance;
+        particle.style.left = `${originX}px`;
+        particle.style.top = `${originY}px`;
+        particle.style.setProperty('--dx', `${dx}px`);
+        particle.style.setProperty('--dy', `${dy}px`);
+        document.body.appendChild(particle);
+        setTimeout(() => {
+          particle.remove();
+        }, 500);
+      }
+      setTimeout(() => {
+        if (cell.parentNode) {
+          container.removeChild(cell);
+        }
+      }, 200);
+    }
+
     container.addEventListener('click', (e) => {
       if (!e.target.classList.contains('cell')) return;
       const cell = e.target;
@@ -188,34 +227,7 @@
 
         container.removeChild(cell);
       } else if (currentMode === 'delete') {
-        popAudio.currentTime = 0;
-        popAudio.play();
-        cell.classList.add('pop');
-        const numParticles = 12;
-        const rect = cell.getBoundingClientRect();
-        const originX = rect.left + rect.width / 2;
-        const originY = rect.top + rect.height / 2;
-        for (let i = 0; i < numParticles; i++) {
-          const particle = document.createElement('div');
-          particle.className = 'particle';
-          const angle = Math.random() * 2 * Math.PI;
-          const distance = 30 + Math.random() * 20;
-          const dx = Math.cos(angle) * distance;
-          const dy = Math.sin(angle) * distance;
-          particle.style.left = `${originX}px`;
-          particle.style.top = `${originY}px`;
-          particle.style.setProperty('--dx', `${dx}px`);
-          particle.style.setProperty('--dy', `${dy}px`);
-          document.body.appendChild(particle);
-          setTimeout(() => {
-            particle.remove();
-          }, 500);
-        }
-        setTimeout(() => {
-          if (cell.parentNode) {
-            container.removeChild(cell);
-          }
-        }, 200);
+        pop(cell);
       }
     });
 
@@ -277,6 +289,18 @@
         }
       });
     }
+
+    document.getElementById('destroyAll').addEventListener('click', () => {
+      const cells = container.querySelectorAll('.cell');
+      cells.forEach(cell => {
+        pop(cell);
+      });
+      setTimeout(() => {
+        container.innerHTML = '<div class="cell" style="top: 50%; left: 50%; transform: translate(-50%, -50%);"></div>';
+        document.querySelectorAll('.cell').forEach(makeDraggable);
+      }, 220); // Give a little buffer
+    });
+
 
     document.querySelectorAll('.cell').forEach(makeDraggable);
   </script>
